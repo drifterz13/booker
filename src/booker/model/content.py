@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from booker.model.book import Position
 
 
+PAGE_SEPARATOR = "\n\n"
+
+
 @dataclass(frozen=True, slots=True)
 class PageFragment:
     """Text extracted from one zero-based physical PDF page."""
@@ -17,7 +20,12 @@ class PageFragment:
 
 @dataclass(frozen=True, slots=True)
 class ContentSegment:
-    """Non-overlapping text owned by one outline entry."""
+    """Non-overlapping text owned by one outline entry.
+
+    Example: fragments ``(PageFragment(0, "Hello"),
+    PageFragment(1, "World"))`` produce ``text == "Hello\\n\\nWorld"``.
+    The page indexes 0 and 1 refer to physical PDF pages 1 and 2.
+    """
 
     title: str
     level: int
@@ -28,7 +36,7 @@ class ContentSegment:
 
     @property
     def text(self) -> str:
-        return "\n\n".join(fragment.text for fragment in self.fragments)
+        return PAGE_SEPARATOR.join(fragment.text for fragment in self.fragments)
 
     @property
     def start_page(self) -> int:
