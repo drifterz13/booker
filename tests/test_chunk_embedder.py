@@ -22,7 +22,6 @@ class ChunkEmbedderTests(unittest.TestCase):
     def test_embeds_text_with_section_context_in_batches(self) -> None:
         embeddings = RecordingEmbeddings()
         chunks = [_chunk(0), _chunk(1), _chunk(2)]
-
         results = ChunkEmbedder(embeddings, batch_size=2).embed(chunks)
 
         self.assertEqual(

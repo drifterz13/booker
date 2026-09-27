@@ -13,3 +13,8 @@ wheels/
 docs/
 .store/
 .env
+
+# Chainlit-generated local UI files
+.chainlit/
+chainlit.md
+.files/

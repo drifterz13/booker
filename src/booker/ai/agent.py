@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from pathlib import Path
 from textwrap import dedent
 
@@ -8,8 +8,8 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 
-from booker.ai.summarizer import BookSummarizer
-from booker.ai.web_searcher import WebSearcher
+from booker.ai.tools.summarizer import BookSummarizer
+from booker.ai.tools.web_searcher import WebSearcher
 from booker.store.chroma import ChromaStore
 
 
@@ -36,6 +36,17 @@ class BookAgent:
             {"messages": [{"role": "user", "content": prompt}]}
         )
         return result["messages"][-1].text
+
+    async def stream(self, messages: Sequence[dict[str, str]]) -> AsyncIterator[str]:
+        """Stream answer text while leaving conversation history to the caller."""
+        async for chunk in self._agent.astream(
+            {"messages": list(messages)}, stream_mode="messages", version="v2"
+        ):
+            if chunk["type"] != "messages":
+                continue
+            token, metadata = chunk["data"]
+            if metadata.get("langgraph_node") == "model" and token.text:
+                yield token.text
 
 
 def build_book_agent(

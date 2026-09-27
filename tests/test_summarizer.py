@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 from langchain_core.messages import AIMessage
 
-from booker.ai.summarizer import BookSummarizer
+from booker.ai.tools.summarizer import BookSummarizer
 from booker.model.book import Book, Position
 from booker.model.content import ContentSegment, PageFragment
 
@@ -37,10 +37,11 @@ class BookSummarizerTests(unittest.TestCase):
         model.invoke.return_value = AIMessage(content="Whole book summary.")
         with (
             patch(
-                "booker.ai.summarizer.OutlineExtractor.extract", return_value=self.book
+                "booker.ai.tools.summarizer.OutlineExtractor.extract",
+                return_value=self.book,
             ),
             patch(
-                "booker.ai.summarizer.ContentExtractor.extract",
+                "booker.ai.tools.summarizer.ContentExtractor.extract",
                 return_value=self.segments,
             ),
         ):
@@ -71,10 +72,11 @@ class BookSummarizerTests(unittest.TestCase):
         ]
         with (
             patch(
-                "booker.ai.summarizer.OutlineExtractor.extract", return_value=self.book
+                "booker.ai.tools.summarizer.OutlineExtractor.extract",
+                return_value=self.book,
             ),
             patch(
-                "booker.ai.summarizer.ContentExtractor.extract",
+                "booker.ai.tools.summarizer.ContentExtractor.extract",
                 return_value=segments,
             ),
         ):
@@ -94,10 +96,11 @@ class BookSummarizerTests(unittest.TestCase):
         model = Mock()
         with (
             patch(
-                "booker.ai.summarizer.OutlineExtractor.extract", return_value=self.book
+                "booker.ai.tools.summarizer.OutlineExtractor.extract",
+                return_value=self.book,
             ),
             patch(
-                "booker.ai.summarizer.ContentExtractor.extract",
+                "booker.ai.tools.summarizer.ContentExtractor.extract",
                 return_value=[],
             ),
         ):

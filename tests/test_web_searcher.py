@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from langchain_core.messages import AIMessage
 
-from booker.ai.web_searcher import WebSearcher
+from booker.ai.tools.web_searcher import WebSearcher
 
 
 class WebSearcherTests(unittest.TestCase):

@@ -18,8 +18,6 @@ class ChunkEmbedder:
         results: list[EmbeddedChunk] = []
 
         for start in range(0, len(chunks), self._batch_size):
-            print(f"Embedding in-progress ({start}/{len(chunks)})")
-
             batch = chunks[start : start + self._batch_size]
             vectors = self._embeddings.embed_documents(
                 [chunk.embedding_text for chunk in batch]
@@ -28,5 +26,4 @@ class ChunkEmbedder:
                 EmbeddedChunk(chunk, vector)
                 for chunk, vector in zip(batch, vectors, strict=True)
             )
-
         return results

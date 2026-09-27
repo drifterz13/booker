@@ -1,86 +1,53 @@
 # Booker
 
-Extract a PDF's bookmark hierarchy and turn it into non-overlapping content
-segments. Outline levels remain structural data instead of being interpreted as
-fixed part, chapter, or section types.
+Booker is a local app for asking questions about PDF books. Upload a book with
+bookmarks, and Booker extracts its section structure, chunks and embeds the
+text, and lets you chat with it. The agent can search the book, summarize it,
+or search the web for external information.
 
-```python
-from pathlib import Path
+## Technology
 
-from booker.chunk.chunk_embedder import ChunkEmbedder
-from booker.chunk.chunker import Chunker
-from booker.extractor.content import ContentExtractor
-from booker.extractor.outline import OutlineExtractor
-from booker.store.chroma import ChromaStore
-from langchain_ollama import OllamaEmbeddings
+- **PDF processing:** PyMuPDF for bookmarks and page text.
+- **Chunking and AI:** LangChain, Ollama with `bge-m3` embeddings, and xAI's
+  `grok-4.3` chat model.
+- **Storage and UI:** Persistent Chroma for vectors and Chainlit for the chat UI.
+- **Development:** Python, uv, unittest, and Ruff.
 
+## Prerequisites
 
-source = Path("book.pdf")
-book = OutlineExtractor(src=source).extract()
+- Python 3.11.4 or newer and [uv](https://docs.astral.sh/uv/).
+- [Ollama](https://ollama.com/) running locally with `bge-m3` pulled.
+- An xAI API key with access to the configured chat model.
+- A PDF with bookmarks and extractable text. Scanned PDFs without OCR and PDFs
+  without bookmarks are not supported yet.
 
-for section in book.walk():
-    print(
-        section.level,
-        section.title,
-        section.start_page,
-        section.end_page,
-    )
+## Install
 
-segments = ContentExtractor().extract(book)
-chunks = Chunker(chunk_size=2000, chunk_overlap=200).chunk(segments)
-embeddings = OllamaEmbeddings(model="bge-m3")
-embedded = ChunkEmbedder(embeddings).embed(chunks)
-store = ChromaStore(Path(".booker/chroma"), collection_name="booker_chunks")
-store.sync(source, embedded)
-
-for segment in segments:
-    print(segment.path, segment.start_page, segment.end_page, segment.text[:100])
-    print([fragment.page_number for fragment in segment.fragments])
-
-for chunk in chunks:
-    print(chunk.path, chunk.start_page, chunk.end_page, chunk.word_count)
-
-for item in embedded:
-    print(item.chunk.path, item.chunk.pages, len(item.vector))
-
-for hit in store.search(embeddings.embed_query("What is this book about?")):
-    print(hit.path, hit.start_page, hit.end_page, hit.text[:100])
+```sh
+uv sync --locked
+ollama pull bge-m3
+cp .env.example .env
 ```
 
-Internally, section boundaries are half-open PDF positions: `start` is included
-and `end` is excluded. Positions use zero-based physical page indexes, while the
-`start_page` and `end_page` convenience properties return one-based page numbers.
+Set `XAI_API_KEY` in `.env`, then ensure Ollama is running.
 
-Outline depth is unrestricted. Hierarchical section ranges may overlap their
-descendants, but content segments never overlap: each segment runs from its TOC
-entry to the immediately following entry and carries its complete ancestor path.
-Segment text is retained as page-level fragments so future chunks can preserve
-their physical PDF page provenance.
+## Run
 
-Chunking uses LangChain's recursive character splitter, preferring paragraph
-and line boundaries. Sizes are measured in characters by default. Chunks can
-span PDF pages but never cross content-segment boundaries; their page metadata
-is mapped from the original page fragments. `chunk.embedding_text` prefixes
-the chunk with its hierarchy path.
+```sh
+uv run chainlit run src/booker/chainlit_app.py
+```
 
-Embedding uses LangChain's Ollama integration and batches requests to avoid
-sending an entire book at once. Run `ollama pull bge-m3` and start Ollama before
-running the embedding example. `EmbeddedChunk` retains each chunk's text, path,
-and page references alongside its dense vector. Chroma persists those vectors,
-the original chunk text, and its section/page metadata under `.booker/chroma`.
-Re-indexing the same source updates its chunks and removes stale ones. Query
-vectors must come from the same embedding model. Ollama's embedding endpoint
-provides BGE-M3's dense vectors, not its sparse or multi-vector outputs.
+Open the URL printed by Chainlit and upload a PDF. Indexing may take a while
+for a large book. Each chat keeps its conversation in memory. Booker saves PDFs
+under `.store/books` and vectors under `.store/chroma`; Chainlit uses `.files/`
+for session uploads. A new chat currently requires another upload and re-index.
+The saved store is shared, so this prototype is not yet set up for private
+multi-user hosting.
 
-Run the tests with:
+## Tests and checks
 
-```shell
+```sh
 uv run python -m unittest discover -s tests -v
-```
-
-Run the lint and formatting checks with:
-
-```shell
 uv run ruff check src tests
 uv run ruff format --check src tests
 ```

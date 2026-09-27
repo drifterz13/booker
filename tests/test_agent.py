@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
+from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.tools import tool
 
@@ -10,6 +11,16 @@ from booker.model.search_hit import SearchHit
 
 
 class BookAgentTests(unittest.IsolatedAsyncioTestCase):
+    async def test_streams_answer_tokens(self) -> None:
+        agent = BookAgent(model=FakeListChatModel(responses=["Hello"]), tools=[])
+
+        tokens = [
+            token
+            async for token in agent.stream([{"role": "user", "content": "Say hello"}])
+        ]
+
+        self.assertEqual("".join(tokens), "Hello")
+
     async def test_runs_with_supplied_tools(self) -> None:
         @tool
         def search_book(query: str) -> str:
