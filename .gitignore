@@ -11,4 +11,5 @@ wheels/
 
 # User files
 docs/
-.booker/
+.store/
+.env
