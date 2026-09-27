@@ -5,8 +5,6 @@ from booker.model.content import PAGE_SEPARATOR, ContentSegment
 
 
 class Chunker:
-    """Split each content segment while retaining its book and page context."""
-
     def __init__(self, *, chunk_size: int = 2000, chunk_overlap: int = 200) -> None:
         self._splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,

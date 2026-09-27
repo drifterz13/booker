@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+from typing import Self
 from unittest.mock import patch
 
 import pymupdf
@@ -144,7 +145,7 @@ class _FakeDocument:
         self._toc = toc
         self._pages = [_FakePage(index) for index in range(page_count)]
 
-    def __enter__(self) -> _FakeDocument:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *args: object) -> None:

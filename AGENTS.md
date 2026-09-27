@@ -10,7 +10,7 @@ the core pipeline. Add or update focused tests when behavior changes.
 - `src/booker/extractor/`, `chunk/`, `ingest/`: PDF extraction, chunking, and
   indexing.
 - `src/booker/ai/`: agent, model setup, and tools.
-- `src/booker/store/`: Chroma persistence.
+- `src/booker/store/`: Chroma storage.
 - `src/booker/application.py`: session orchestration; `chainlit_app.py`: UI.
 - `tests/`: unittest suite.
 

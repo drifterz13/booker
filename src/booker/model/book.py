@@ -52,6 +52,7 @@ class BookSection:
 
         return self.end.page_number
 
+
 @dataclass(slots=True)
 class Book:
     source: Path
@@ -70,15 +71,13 @@ class Book:
         """Yield every section together with its title path."""
 
         stack: list[tuple[BookSection, tuple[str, ...]]] = [
-            (section, (section.title,))
-            for section in reversed(self.sections)
+            (section, (section.title,)) for section in reversed(self.sections)
         ]
         while stack:
             section, path = stack.pop()
             yield section, path
             stack.extend(
-                (child, (*path, child.title))
-                for child in reversed(section.children)
+                (child, (*path, child.title)) for child in reversed(section.children)
             )
 
     @property

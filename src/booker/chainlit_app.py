@@ -2,13 +2,14 @@ from pathlib import Path
 
 import chainlit as cl
 from dotenv import load_dotenv
-from langchain_ollama import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
-from booker.ai.model.xai import create_xai_model
+from booker.ai.model.openai import create_openai_model
 from booker.application import Application, Session
+from booker.config.env import EnvConfig
 from booker.store.chroma import ChromaStore
 
-DATA_DIR = Path(".store")
+EMBEDDING_MODEL = "text-embedding-3-small"
 
 load_dotenv()
 
@@ -35,27 +36,37 @@ async def on_chat_start() -> None:
 
     status = await cl.Message(content=f"Indexing {uploaded.name}...").send()
 
+    store: ChromaStore | None = None
+    conf = EnvConfig()
     try:
+        store = ChromaStore(config=conf)
         application = Application(
-            books_dir=DATA_DIR / "books",
-            store=ChromaStore(DATA_DIR / "chroma", collection_name="books"),
-            embeddings=OllamaEmbeddings(model="bge-m3"),
-            model=create_xai_model(),
+            store=store,
+            embeddings=OpenAIEmbeddings(model=EMBEDDING_MODEL),
+            model=create_openai_model(),
         )
         session = await cl.make_async(application.start)(Path(uploaded.path))
-    except Exception as exc:  # noqa: BLE001 - report indexing failures in the UI
+    except Exception as exc:  # noqa: BLE001 - show indexing failures in the UI
+        if store is not None:
+            store.close()
         status.content = f"Could not index {uploaded.name}: {exc}"
         await status.update()
         return
 
     cl.user_session.set("session", session)
-    status.content = (
-        f"Indexed {uploaded.name} ({session.chunk_count} chunks). Ask about the book!"
-    )
+    cl.user_session.set("store", store)
+    status.content = f"Book: {uploaded.name} is ready. Ask about the book!"
     await status.update()
     await cl.Pdf(path=str(session.source), name=uploaded.name, display="side").send(
         for_id=status.id
     )
+
+
+@cl.on_chat_end
+async def on_chat_end() -> None:
+    store: ChromaStore | None = cl.user_session.get("store")
+    if store is not None:
+        store.close()
 
 
 @cl.on_message
@@ -74,7 +85,7 @@ async def on_message(message: cl.Message) -> None:
                 await answer.update()
                 started = True
             await answer.stream_token(token)
-    except Exception as exc:  # noqa: BLE001 - report agent failures in the UI
+    except Exception as exc:  # noqa: BLE001 - show agent failures in the UI
         answer.content = f"Could not answer: {exc}"
         await answer.update()
         return

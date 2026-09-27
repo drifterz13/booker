@@ -27,7 +27,7 @@ class BookAgentTests(unittest.IsolatedAsyncioTestCase):
             """Find a passage in the selected book."""
             return f"Book passage for {query}"
 
-        model = "xai:grok-4.3"
+        model = "openai:gpt-4o-mini"
         with patch("booker.ai.agent.create_agent") as create_agent:
             create_agent.return_value.ainvoke = AsyncMock(
                 return_value={"messages": [AIMessage(content="Answer, page 3")]}
@@ -38,7 +38,7 @@ class BookAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(answer, "Answer, page 3")
         self.assertEqual(create_agent.call_args.kwargs["model"], model)
         self.assertEqual(create_agent.call_args.kwargs["tools"], [search_book])
-        self.assertIn("Cite PDF pages", create_agent.call_args.kwargs["system_prompt"])
+        self.assertIn("[PDF pages: 3]", create_agent.call_args.kwargs["system_prompt"])
         create_agent.return_value.ainvoke.assert_awaited_once_with(
             {"messages": [{"role": "user", "content": "What does the book say?"}]}
         )
@@ -57,18 +57,15 @@ class BookAgentTests(unittest.IsolatedAsyncioTestCase):
         ]
         embeddings = Mock()
         embeddings.embed_query.return_value = [1.0, 0.0]
-        summarizer = Mock()
-        summarizer.summarize.return_value = "Book summary"
         web_searcher = Mock()
         web_searcher.search.return_value = "News: https://example.com"
 
         with patch("booker.ai.agent.BookAgent") as agent_class:
             result = build_book_agent(
-                model="xai:grok-4.3",
+                model="openai:gpt-4o-mini",
                 source=source,
                 store=store,
                 embeddings=embeddings,
-                summarizer=summarizer,
                 web_searcher=web_searcher,
             )
 
@@ -77,11 +74,10 @@ class BookAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(
             "A relevant passage", tools["search_book"].invoke({"query": "pooling"})
         )
-        self.assertEqual(tools["summarize_book"].invoke({}), "Book summary")
+        self.assertEqual(set(tools), {"search_book", "search_web"})
         self.assertEqual(
             tools["search_web"].invoke({"query": "latest news"}),
             "News: https://example.com",
         )
         store.search.assert_called_once_with([1.0, 0.0], source=source, limit=5)
-        summarizer.summarize.assert_called_once_with(source)
         web_searcher.search.assert_called_once_with("latest news")

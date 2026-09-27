@@ -1,28 +1,33 @@
 import json
 from pathlib import Path
 from typing import cast
+from uuid import uuid4
 
 import chromadb
 
+from booker.config.env import EnvConfig
+from booker.model.chunk import Chunk
 from booker.model.embedded_chunk import EmbeddedChunk
 from booker.model.search_hit import SearchHit
 
 
 class ChromaStore:
-    """Persist dense embeddings with their source metadata locally."""
+    """Keep one chat's book embeddings in memory."""
 
-    def __init__(
-        self, directory: Path, *, model_name: str = "bge-m3", collection_name: str
-    ) -> None:
-        client = chromadb.PersistentClient(path=str(directory))
-        self._collection = client.get_or_create_collection(
-            name=collection_name,
+    def __init__(self, *, config: EnvConfig) -> None:
+        self._client = chromadb.CloudClient(
+            api_key=config.chroma_api_key,
+            tenant=config.chroma_tenant,
+            database=config.chroma_database,
+        )
+        self._collection = self._client.create_collection(
+            name=f"booker-{uuid4().hex}",
             embedding_function=None,
-            metadata={"embedding_model": model_name},
             configuration={"hnsw": {"space": "cosine"}},
         )
-        if (self._collection.metadata or {}).get("embedding_model") != model_name:
-            raise ValueError("Collection uses a different embedding model")
+
+    def close(self) -> None:
+        self._client.delete_collection(name=self._collection.name)
 
     def sync(self, source: Path, items: list[EmbeddedChunk]) -> None:
         """Replace stored items for a source, removing any stale entries."""
@@ -31,10 +36,7 @@ class ChromaStore:
         old_ids = set(
             self._collection.get(where={"source": source_id}, include=[])["ids"]
         )
-        ids = [
-            f"{source_id}:{item.chunk.segment_index}:{item.chunk.chunk_index}"
-            for item in items
-        ]
+        ids = [self._chunk_id(source_id, item.chunk) for item in items]
 
         for start in range(0, len(items), 100):
             batch = items[start : start + 100]
@@ -54,6 +56,10 @@ class ChromaStore:
 
         if stale_ids := old_ids - set(ids):
             self._collection.delete(ids=list(stale_ids))
+
+    @staticmethod
+    def _chunk_id(source_id: str, chunk: Chunk) -> str:
+        return f"{source_id}:{chunk.segment_index}:{chunk.chunk_index}"
 
     def search(
         self,

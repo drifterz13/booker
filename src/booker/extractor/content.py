@@ -8,8 +8,6 @@ from booker.model.content import ContentSegment, PageFragment
 
 
 class ContentExtractor:
-    """Extract non-overlapping text segments from a book outline."""
-
     def extract(self, book: Book) -> list[ContentSegment]:
         entries = list(book.walk_with_path())
         if not entries:

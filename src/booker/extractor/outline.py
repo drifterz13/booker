@@ -14,13 +14,10 @@ class BookExtractionError(ValueError):
 
 
 class OutlineExtractor:
-    """Extract a book hierarchy and its ranges from a PDF outline."""
-
     def __init__(self, *, src: Path) -> None:
         self._src = src
 
     def extract(self) -> Book:
-        """Return the outline tree with an exclusive end for every section."""
 
         with pymupdf.open(self._src) as pdf:
             roots = self._build_sections(pdf)

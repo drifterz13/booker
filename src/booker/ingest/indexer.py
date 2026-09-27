@@ -15,7 +15,6 @@ def index_book(
     store: ChromaStore,
     embeddings: Embeddings,
 ) -> int:
-    """Index an outlined PDF and return its chunk count."""
     book = OutlineExtractor(src=source).extract()
     if not book.sections:
         raise ValueError("The PDF has no bookmarks to identify its sections")

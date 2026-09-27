@@ -1,4 +1,3 @@
-import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -7,33 +6,25 @@ from booker.application import Application, Session
 
 
 class ApplicationTests(unittest.TestCase):
-    def test_indexes_upload_at_a_stable_content_path(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            upload = Path(directory) / "upload.pdf"
-            upload.write_bytes(b"%PDF-1.7\nexample")
-            store = Mock()
-            embeddings = Mock()
-            model = Mock()
-            application = Application(
-                books_dir=Path(directory) / "books",
-                store=store,
-                embeddings=embeddings,
-                model=model,
-            )
+    def test_indexes_each_upload_using_its_path(self) -> None:
+        upload = Path("upload.pdf")
+        store = Mock()
+        embeddings = Mock()
+        application = Application(store=store, embeddings=embeddings, model=Mock())
 
-            with (
-                patch("booker.application.index_book", return_value=3) as index,
-                patch("booker.application.build_book_agent") as build_agent,
-            ):
-                first = application.start(upload)
-                second = application.start(upload)
+        with (
+            patch("booker.application.index_book") as index,
+            patch("booker.application.build_book_agent"),
+        ):
+            first = application.start(upload)
+            second = application.start(upload)
 
-            self.assertEqual(first.source, second.source)
-            self.assertEqual(first.source.read_bytes(), upload.read_bytes())
-            self.assertEqual(first.chunk_count, 3)
-            index.assert_called_with(first.source, store=store, embeddings=embeddings)
-            self.assertEqual(build_agent.call_count, 2)
-            self.assertEqual(build_agent.call_args.kwargs["source"], first.source)
+        self.assertEqual(first.source, upload)
+        self.assertEqual(second.source, upload)
+        self.assertEqual(index.call_count, 2)
+        for call in index.call_args_list:
+            self.assertEqual(call.args, (upload,))
+            self.assertEqual(call.kwargs, {"store": store, "embeddings": embeddings})
 
 
 class SessionTests(unittest.IsolatedAsyncioTestCase):
@@ -46,7 +37,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             yield "Book answer"
 
         agent.stream.side_effect = stream
-        session = Session(Path("book.pdf"), 3, agent)
+        session = Session(Path("book.pdf"), agent)
 
         first = "".join([part async for part in session.stream("First question")])
         second = "".join([part async for part in session.stream("Follow-up")])
