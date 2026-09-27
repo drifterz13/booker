@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from booker.model.book import Position
 
-
 PAGE_SEPARATOR = "\n\n"
 
 

@@ -1,8 +1,10 @@
+from typing import cast
+
 import pymupdf
 
+from booker.extractor.outline import BookExtractionError
 from booker.model.book import Book, Position
 from booker.model.content import ContentSegment, PageFragment
-from booker.utils.outline_extractor import BookExtractionError
 
 
 class ContentExtractor:
@@ -62,7 +64,7 @@ class ContentExtractor:
                 continue
 
             clip = pymupdf.Rect(page.rect.x0, top, page.rect.x1, bottom)
-            text = page.get_text("text", clip=clip, sort=True).strip()
+            text = cast(str, page.get_text("text", clip=clip, sort=True)).strip()
             if text:
                 fragments.append(PageFragment(page=page_index, text=text))
 

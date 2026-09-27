@@ -6,10 +6,10 @@ from unittest.mock import patch
 
 import pymupdf
 
+from booker.extractor.content import ContentExtractor
+from booker.extractor.outline import OutlineExtractor
 from booker.model.book import Book, BookSection, Position
 from booker.model.content import PageFragment
-from booker.utils.content_extractor import ContentExtractor
-from booker.utils.outline_extractor import OutlineExtractor
 
 
 class OutlineExtractorTests(unittest.TestCase):
@@ -92,7 +92,7 @@ class ContentExtractorTests(unittest.TestCase):
         book = Book(Path("book.pdf"), 2, [part, part_b])
         pdf = _FakeDocument(page_count=2, toc=[])
 
-        with patch("booker.utils.content_extractor.pymupdf.open", return_value=pdf):
+        with patch("booker.extractor.content.pymupdf.open", return_value=pdf):
             segments = ContentExtractor().extract(book)
 
         self.assertEqual(

@@ -1,12 +1,13 @@
 from pathlib import Path
 
-from booker.utils.chunker import Chunker
-from booker.utils.content_extractor import ContentExtractor
-from booker.utils.outline_extractor import OutlineExtractor
+from booker.chunk.chunker import Chunker
+from booker.extractor.content import ContentExtractor
+from booker.extractor.outline import OutlineExtractor
 
 
 def main() -> None:
-    source = Path("docs") / "WorkingEffectivelyWithLegacyCode.pdf"
+    # source = Path("docs") / "WorkingEffectivelyWithLegacyCode.pdf"
+    source = Path("docs") / "High-Performance-Browser-Networking.pdf"
     book = OutlineExtractor(src=source).extract()
 
     for section in book.walk():
@@ -28,7 +29,7 @@ def main() -> None:
     #         f"Fragment page numbers: {[fragment.page_number for fragment in segment.fragments]}"
     #     )
 
-    # for chunk in chunks:
-    #     print(
-    #         f"Chunk path: {chunk.path}, start - end {chunk.start_page} - {chunk.end_page}, wc: {chunk.word_count}"
-    #     )
+    for chunk in chunks:
+        print(
+            f"Chunk path: {chunk.path}, start - end {chunk.start_page} - {chunk.end_page}, wc: {chunk.word_count}, chunk: {chunk.text}"
+        )

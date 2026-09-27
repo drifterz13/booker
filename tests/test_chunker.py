@@ -1,8 +1,8 @@
 import unittest
 
+from booker.chunk.chunker import Chunker
 from booker.model.book import Position
 from booker.model.content import ContentSegment, PageFragment
-from booker.utils.chunker import Chunker
 
 
 class ChunkerTests(unittest.TestCase):

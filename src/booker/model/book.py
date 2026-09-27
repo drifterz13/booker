@@ -69,7 +69,7 @@ class Book:
     ) -> Iterator[tuple[BookSection, tuple[str, ...]]]:
         """Yield every section together with its title path."""
 
-        stack = [
+        stack: list[tuple[BookSection, tuple[str, ...]]] = [
             (section, (section.title,))
             for section in reversed(self.sections)
         ]
