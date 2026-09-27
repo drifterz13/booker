@@ -1,7 +1,7 @@
 import pymupdf
 
 from booker.model.book import Book, Position
-from booker.model.content import ContentSegment
+from booker.model.content import ContentSegment, PageFragment
 from booker.utils.outline_extractor import BookExtractionError
 
 
@@ -23,7 +23,7 @@ class ContentExtractor:
                     if index + 1 < len(entries)
                     else document_end
                 )
-                text = self._extract_span(pdf, section.start, end)
+                fragments = self._extract_fragments(pdf, section.start, end)
                 segments.append(
                     ContentSegment(
                         title=section.title,
@@ -31,24 +31,24 @@ class ContentExtractor:
                         path=path,
                         start=section.start,
                         end=end,
-                        text=text,
+                        fragments=fragments,
                     )
                 )
 
             return segments
 
     @staticmethod
-    def _extract_span(
+    def _extract_fragments(
         pdf: pymupdf.Document,
         start: Position,
         end: Position,
-    ) -> str:
+    ) -> tuple[PageFragment, ...]:
         if end < start:
             raise BookExtractionError(
                 f"Content end {end!r} appears before start {start!r}"
             )
 
-        pieces: list[str] = []
+        fragments: list[PageFragment] = []
         last_page = min(end.page, pdf.page_count - 1)
 
         for page_index in range(start.page, last_page + 1):
@@ -64,6 +64,6 @@ class ContentExtractor:
             clip = pymupdf.Rect(page.rect.x0, top, page.rect.x1, bottom)
             text = page.get_text("text", clip=clip, sort=True).strip()
             if text:
-                pieces.append(text)
+                fragments.append(PageFragment(page=page_index, text=text))
 
-        return "\n\n".join(pieces)
+        return tuple(fragments)

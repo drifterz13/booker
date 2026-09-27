@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pymupdf
 
 from booker.model.book import Book, BookSection, Position
+from booker.model.content import PageFragment
 from booker.utils.content_extractor import ContentExtractor
 from booker.utils.outline_extractor import OutlineExtractor
 
@@ -103,19 +104,38 @@ class ContentExtractorTests(unittest.TestCase):
             ],
         )
         self.assertEqual(segments[1].path, ("Part A", "Chapter"))
+        self.assertEqual(
+            segments[1].fragments,
+            (PageFragment(0, "page=0 top=100.0 bottom=800.0"),),
+        )
         self.assertEqual(segments[1].text, "page=0 top=100.0 bottom=800.0")
 
-    def test_extract_span_clips_segments_on_the_same_page(self) -> None:
+    def test_extracts_page_fragment_with_same_page_clipping(self) -> None:
         pdf = _FakeDocument(page_count=1, toc=[])
 
-        text = ContentExtractor._extract_span(
+        fragments = ContentExtractor._extract_fragments(
             pdf,  # type: ignore[arg-type]
             Position(page=0, y=100),
             Position(page=0, y=300),
         )
 
-        self.assertEqual(text, "page=0 top=100.0 bottom=300.0")
+        self.assertEqual(
+            fragments,
+            (PageFragment(0, "page=0 top=100.0 bottom=300.0"),),
+        )
         self.assertEqual(pdf[0].clips, [(100.0, 300.0)])
+
+    def test_preserves_page_for_each_fragment(self) -> None:
+        pdf = _FakeDocument(page_count=3, toc=[])
+
+        fragments = ContentExtractor._extract_fragments(
+            pdf,  # type: ignore[arg-type]
+            Position(page=0, y=100),
+            Position(page=2, y=300),
+        )
+
+        self.assertEqual([fragment.page for fragment in fragments], [0, 1, 2])
+        self.assertEqual([fragment.page_number for fragment in fragments], [1, 2, 3])
 
 
 class _FakeDocument:

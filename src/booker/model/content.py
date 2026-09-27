@@ -4,6 +4,18 @@ from booker.model.book import Position
 
 
 @dataclass(frozen=True, slots=True)
+class PageFragment:
+    """Text extracted from one zero-based physical PDF page."""
+
+    page: int
+    text: str
+
+    @property
+    def page_number(self) -> int:
+        return self.page + 1
+
+
+@dataclass(frozen=True, slots=True)
 class ContentSegment:
     """Non-overlapping text owned by one outline entry."""
 
@@ -12,7 +24,11 @@ class ContentSegment:
     path: tuple[str, ...]
     start: Position
     end: Position
-    text: str
+    fragments: tuple[PageFragment, ...]
+
+    @property
+    def text(self) -> str:
+        return "\n\n".join(fragment.text for fragment in self.fragments)
 
     @property
     def start_page(self) -> int:

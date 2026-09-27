@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from booker.utils.content_extractor import ContentExtractor
 from booker.utils.outline_extractor import OutlineExtractor
 
 
@@ -15,3 +16,9 @@ def main() -> None:
             f"{sum(1 for _ in book.walk())} sections, "
             f"maximum level {book.max_level}"
         )
+
+        extractor = ContentExtractor()
+        segments = extractor.extract(book)
+
+        for sample in segments[100:105]:
+            print(sample.title, sample.path, sample.text)

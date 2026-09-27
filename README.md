@@ -26,6 +26,7 @@ segments = ContentExtractor().extract(book)
 
 for segment in segments:
     print(segment.path, segment.start_page, segment.end_page, segment.text[:100])
+    print([fragment.page_number for fragment in segment.fragments])
 ```
 
 Internally, section boundaries are half-open PDF positions: `start` is included
@@ -35,6 +36,8 @@ and `end` is excluded. Positions use zero-based physical page indexes, while the
 Outline depth is unrestricted. Hierarchical section ranges may overlap their
 descendants, but content segments never overlap: each segment runs from its TOC
 entry to the immediately following entry and carries its complete ancestor path.
+Segment text is retained as page-level fragments so future chunks can preserve
+their physical PDF page provenance.
 
 Run the tests with:
 
